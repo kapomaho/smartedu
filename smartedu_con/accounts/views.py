@@ -1,12 +1,71 @@
-from django.shortcuts import get_object_or_404, render
+from django.contrib import messages
+from django.shortcuts import  redirect, render
+from django.contrib.auth import authenticate,login,logout
+from django.contrib.auth.models import User
 
-
-    
+from courses.models import Course
+from .forms import LoginForm, RegisterForm
+from django.contrib.auth.decorators import login_required
 def user_login(request):
-    return render(request,'login.html')
+    if request.method == 'POST':
+        form = LoginForm(request.POST)
+        if form.is_valid():
+            username = form.cleaned_data['username']
+            password = form.cleaned_data['password']
+            user = authenticate(request,username= username,password=password)
+
+
+            if user is not None:
+                if user.is_active:
+                    login(request,user)
+                    return redirect('index')
+                else:
+                    messages.info(request, 'Disabled Account')
+            else:
+                messages.info(request,'Invalid username password')
+    else:
+        form= LoginForm()
+
+    return render(request,'login.html',{'form':form})
+
 def user_register(request):
-    pass
+    
+    if request.method == 'POST':
+        form = RegisterForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request,'Account has been created . You can login')
+            return redirect('login')
+    else:
+        form= RegisterForm()
+    return render(request,'register.html',{'form':form})
 def user_logout(request):
-    pass
+    logout(request)
+    return redirect('index')
+
+
+@login_required(login_url='login')
 def user_dashboard(request):
-    pass
+    current_user = request.user     
+
+    courses= current_user.courses_joined.all()
+
+    context={
+        'courses': courses
+    }
+    return render(request,'dashboard.html',context)
+
+
+def enroll_the_course(request):
+    course_id= request.POST['course_id']
+    user_id= request.POST['user_id']
+    course= Course.objects.get(id= course_id)
+    user= User.objects.get(id= user_id)
+    course.students.add(user)
+    return redirect('dashboard')
+    
+def release_the_course(request):
+    course = Course.objects.get(id = request.POST['course_id'])
+    user = User.objects.get(id = request.POST['user_id'])
+    course.students.remove(user)
+    return redirect('dashboard')

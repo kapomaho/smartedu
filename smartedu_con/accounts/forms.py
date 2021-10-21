@@ -1,8 +1,7 @@
 from django import forms
 from django.db.models import fields
-from .models import Contact
 from django.contrib.auth.forms import UserCreationForm
-
+from django.contrib.auth.models import User
 class LoginForm(forms.Form):
     username = forms.CharField(widget=forms.TextInput(attrs={
         'class': 'form-control',
@@ -47,4 +46,4 @@ class RegisterForm(UserCreationForm):
 
     class Meta:
         model= User
-        fields= ['first_name','last_name','user_name','email','password1','password2']
+        fields= ['first_name','last_name','username','email','password1','password2']
